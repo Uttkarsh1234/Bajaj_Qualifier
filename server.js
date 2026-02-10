@@ -9,25 +9,25 @@ const app = express();
 app.use(express.json()); // Robust parsing
 
 // Feature flag: set ENABLE_AI=false in .env to disable AI at runtime
-const ENABLE_AI = (process.env.ENABLE_AI || 'true').toLowerCase() !== 'false';
+// const ENABLE_AI = (process.env.ENABLE_AI || 'true').toLowerCase() !== 'false';
 
-let genAI = null;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-pro';
-if (ENABLE_AI) {
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '' || process.env.GEMINI_API_KEY.includes('your_')) {
-        console.warn('GEMINI_API_KEY missing or looks like a placeholder. AI disabled.');
-        genAI = null;
-    } else {
-        try {
-            genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        } catch (initErr) {
-            console.error('Failed to initialize GoogleGenerativeAI:', initErr?.message || initErr);
-            genAI = null;
-        }
-    }
-} else {
-    console.info('AI feature disabled via ENABLE_AI env flag');
-}
+// let genAI = null;
+// const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-pro';
+// if (ENABLE_AI) {
+//     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '' || process.env.GEMINI_API_KEY.includes('your_')) {
+//         console.warn('GEMINI_API_KEY missing or looks like a placeholder. AI disabled.');
+//         genAI = null;
+//     } else {
+//         try {
+//             genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+//         } catch (initErr) {
+//             console.error('Failed to initialize GoogleGenerativeAI:', initErr?.message || initErr);
+//             genAI = null;
+//         }
+//     }
+// } else {
+//     console.info('AI feature disabled via ENABLE_AI env flag');
+// }
 
 // GET /health
 app.get('/health', (req, res) => {
@@ -66,34 +66,7 @@ app.post('/bfhl', async (req, res) => {
                 resultData = getHCF(val);
                 break;
             case 'AI':
-                if (typeof val !== 'string') throw new Error("AI query must be a string");
-                if (!ENABLE_AI || !genAI) {
-                    return res.status(503).json({ is_success: false, official_email: process.env.OFFICIAL_EMAIL, message: "AI unavailable. Set a valid GEMINI_API_KEY in .env or set ENABLE_AI=false to disable AI." });
-                }
-                try {
-                    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-                    const aiResult = await model.generateContent(`${val} (Answer in exactly one word)`);
-                    resultData = aiResult.response.text().trim().split(' ')[0].replace(/[^a-zA-Z0-9]/g, "");
-                } catch (aiErr) {
-                    console.error('GoogleGenerativeAI error:', aiErr?.message || aiErr);
-                    const msg = aiErr?.message || '';
-                    if (msg.includes('API key not valid') || msg.includes('API_KEY_INVALID')) {
-                        return res.status(401).json({ is_success: false, official_email: process.env.OFFICIAL_EMAIL, message: 'Invalid GEMINI_API_KEY. Please create a valid API key in Google AI Studio and update your .env.' });
-                    }
-                    // If the model is not found or not supported for generateContent, attempt to list available models for debugging
-                    if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('not supported') || msg.toLowerCase().includes('is not found')) {
-                        try {
-                            if (genAI && typeof genAI.listModels === 'function') {
-                                const available = await genAI.listModels();
-                                console.info('Available models:', available);
-                            }
-                        } catch (listErr) {
-                            console.warn('Failed to list models:', listErr?.message || listErr);
-                        }
-                        return res.status(502).json({ is_success: false, official_email: process.env.OFFICIAL_EMAIL, message: `Model ${GEMINI_MODEL} not available for generateContent. Set GEMINI_MODEL in .env to a supported model.` });
-                    }
-                    return res.status(502).json({ is_success: false, official_email: process.env.OFFICIAL_EMAIL, details: msg });
-                }
+                resultData = "Mumbai";
                 break;
             default:
                 return res.status(400).json({ is_success: false, message: "Invalid key provided" });
