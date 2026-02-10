@@ -91,5 +91,5 @@ app.post('/bfhl', async (req, res) => {
 // Final Security Guardrail: Catch-all for undefined routes
 app.use((req, res) => res.status(404).json({ is_success: false, message: "Route not found" }));
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || '0.0.0.0';
 app.listen(PORT, () => console.log(`Server live on port ${PORT}`));
