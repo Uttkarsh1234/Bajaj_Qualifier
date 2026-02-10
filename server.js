@@ -1,33 +1,13 @@
 // index.js
-import dotenv from 'dotenv';
-dotenv.config();
 import express from 'express';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import dotenv from "dotenv";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+dotenv.config();
 import { getFibonacci, isPrime, getHCF, getLCM } from './util.js';
 
 const app = express();
 app.use(express.json()); // Robust parsing
-
-// Feature flag: set ENABLE_AI=false in .env to disable AI at runtime
-// const ENABLE_AI = (process.env.ENABLE_AI || 'true').toLowerCase() !== 'false';
-
-// let genAI = null;
-// const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-pro';
-// if (ENABLE_AI) {
-//     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.trim() === '' || process.env.GEMINI_API_KEY.includes('your_')) {
-//         console.warn('GEMINI_API_KEY missing or looks like a placeholder. AI disabled.');
-//         genAI = null;
-//     } else {
-//         try {
-//             genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-//         } catch (initErr) {
-//             console.error('Failed to initialize GoogleGenerativeAI:', initErr?.message || initErr);
-//             genAI = null;
-//         }
-//     }
-// } else {
-//     console.info('AI feature disabled via ENABLE_AI env flag');
-// }
 
 // GET /health
 app.get('/health', (req, res) => {
@@ -66,7 +46,26 @@ app.post('/bfhl', async (req, res) => {
                 resultData = getHCF(val);
                 break;
             case 'AI':
-                resultData = "Mumbai";
+                if (typeof val !== 'string' || val.trim() === "") {
+                    throw new Error("AI query must be a non-empty string");
+                }
+
+                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+                // 🚀 DO NOT pass apiVersion
+                const model = genAI.getGenerativeModel({
+                    model: "gemini-2.5-flash"
+                });
+
+                const aiResult = await model.generateContent(
+                    `Answer in exactly ONE word only.\nQuestion: ${val}`
+                );
+
+                const responseText = aiResult.response.text();
+
+                resultData = responseText
+                    .trim()
+                    .match(/[a-zA-Z0-9]+/)?.[0] || "";
                 break;
             default:
                 return res.status(400).json({ is_success: false, message: "Invalid key provided" });
