@@ -1,4 +1,3 @@
-// index.js
 import express from 'express';
 import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -7,19 +6,15 @@ dotenv.config();
 import { getFibonacci, isPrime, getHCF, getLCM } from './util.js';
 
 const app = express();
-app.use(express.json()); // Robust parsing
-
-// GET /health
+app.use(express.json());
 app.get('/health', (req, res) => {
     res.status(200).json({ is_success: true, official_email: process.env.OFFICIAL_EMAIL });
 });
 
-// POST /bfhl
 app.post('/bfhl', async (req, res) => {
     try {
         const keys = Object.keys(req.body);
         
-        // Validation: Exactly one key allowed
         if (keys.length !== 1) {
             return res.status(400).json({ is_success: false, message: "Request must contain exactly one valid key." });
         }
@@ -52,7 +47,7 @@ app.post('/bfhl', async (req, res) => {
 
                 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-                // 🚀 DO NOT pass apiVersion
+              
                 const model = genAI.getGenerativeModel({
                     model: "gemini-2.5-flash"
                 });
@@ -78,7 +73,6 @@ app.post('/bfhl', async (req, res) => {
         });
 
     } catch (error) {
-        // Graceful error handling
         res.status(400).json({
             is_success: false,
             official_email: process.env.OFFICIAL_EMAIL,
@@ -86,8 +80,6 @@ app.post('/bfhl', async (req, res) => {
         });
     }
 });
-
-// Final Security Guardrail: Catch-all for undefined routes
 app.use((req, res) => res.status(404).json({ is_success: false, message: "Route not found" }));
 
 const PORT = process.env.PORT || '0.0.0.0';
